@@ -34,8 +34,9 @@
            }
        }
    },
-   "postCreateCommand": "curl -fsSL https://claude.ai/install.sh | bash && \\
-        curl -LsSf https://astral.sh/uv/install.sh | sh",
+   "postCreateCommand": "curl -LsSf https://astral.sh/uv/install.sh | sh && \\
+        uv tool install specify-cli --from git+https://github.com/github/spec-kit.git && \\
+        curl -fsSL https://claude.ai/install.sh | bash",
    "remoteUser": "vscode",
    "remoteEnv": {
      "CLAUDE_CONFIG_DIR": "/home/vscode/.claude"

@@ -1,0 +1,69 @@
+[project]
+name = "exoplanet-researcher"
+version = "0.1.0"
+description = "XPI — Independent Agentic Exoplanet Vetting"
+requires-python = ">=3.11"
+dependencies = [
+    "langgraph>=0.2.0",
+    "langchain>=0.3.0",
+    "langchain-anthropic>=0.3.0",
+    "pydantic>=2.0.0",
+    "pydantic-ai>=0.0.14",
+    "lightkurve>=2.4.0",
+    "astropy>=6.0.0",
+    "numpy>=1.26.0",
+    "matplotlib>=3.8.0",
+    "arxiv>=2.1.0",
+    "requests>=2.31.0",
+    "jsonschema>=4.21.0",
+    "pyyaml>=6.0.0",
+    "mcp>=1.0.0",
+    "anthropic>=0.40.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.5.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+markers = [
+    "integration: marks tests as integration tests (may require network access)",
+    "benchmark: marks tests as benchmark tests",
+    "unit: marks tests as unit tests",
+]

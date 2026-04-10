@@ -1,0 +1,23 @@
+# XPI Agent Configuration
+
+model_id: "claude-sonnet-4-6"
+
+agents:
+  observer:
+    token_budget: 8000
+    anomaly_sigma_threshold: 2.0
+
+  scholar:
+    token_budget: 16000
+    max_iterations: 3
+
+  distillation:
+    token_budget: 4000
+
+  synthesizer:
+    token_budget: 12000
+    conflict_threshold: 30.0
+    max_correction_iterations: 2
+
+  validator:
+    token_budget: 4000

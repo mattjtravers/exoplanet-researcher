@@ -36,7 +36,9 @@
    },
    "postCreateCommand": "curl -LsSf https://astral.sh/uv/install.sh | sh && \\
         uv tool install specify-cli --from git+https://github.com/github/spec-kit.git && \\
-        curl -fsSL https://claude.ai/install.sh | bash",
+        curl -fsSL https://claude.ai/install.sh | bash && \\
+        claude plugin marketplace add pydantic/skills && \\
+        claude plugin install ai@pydantic-skills",
    "remoteUser": "vscode",
    "remoteEnv": {
      "CLAUDE_CONFIG_DIR": "/home/vscode/.claude"

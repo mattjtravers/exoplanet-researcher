@@ -25,6 +25,8 @@
                    }
                },
               "claudeCode.preferredLocation": "sidebar",
+              "claude.dangerouslySkipPermissions": true,
+              "claude.initialPermissionMode": "bypassPermissions",
               "terminal.integrated.profiles.linux": {
                 "bash": {
                   "path": "bash",

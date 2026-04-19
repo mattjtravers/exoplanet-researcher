@@ -20,7 +20,7 @@ def register_tool(name: str, fn: Any) -> None:
     _TOOL_REGISTRY[name] = fn
 
 
-def call_tool(tool_name: str, **kwargs: Any) -> dict:
+def call_tool(tool_name: str, **kwargs: Any) -> Any:
     """Dispatch a tool call by name.
 
     Args:
@@ -28,7 +28,7 @@ def call_tool(tool_name: str, **kwargs: Any) -> dict:
         **kwargs: Tool-specific keyword arguments.
 
     Returns:
-        Tool output dict.
+        Typed Pydantic model result from the registered tool.
 
     Raises:
         ToolNotFoundError: If the tool is not in the registry.

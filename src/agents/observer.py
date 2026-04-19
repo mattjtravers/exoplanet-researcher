@@ -52,7 +52,6 @@ class ObserverAgent(AgentBase):
         lineage_entries: list[LineageEntry] = []
         anomaly_records: list[AnomalyRecord] = []
         primary_evidence: list[str] = []
-        transit_params: dict = {}
 
         # Try available quarters
         quarters_to_try = candidate.available_quarters[:3]  # try first 3
@@ -84,21 +83,21 @@ class ObserverAgent(AgentBase):
             )
 
         # Fit transit
-        quarter_id = f"Q{lc_data['quarter']}"
+        quarter_id = f"Q{lc_data.quarter}"
         primary_evidence.append(quarter_id)
 
         transit_params = fit_transit(
-            time=lc_data["time"],
-            flux=lc_data["flux"],
-            flux_err=lc_data["flux_err"],
+            time=lc_data.time,
+            flux=lc_data.flux,
+            flux_err=lc_data.flux_err,
             target_id=candidate.target_id,
         )
 
-        tool_call_id = transit_params["tool_call_id"]
+        tool_call_id = transit_params.tool_call_id
 
         # Build lineage entries for computed parameters
         for param_name in ("period_days", "depth", "duration_hours", "rp_rs"):
-            val = transit_params.get(param_name)
+            val = getattr(transit_params, param_name, None)
             if val is not None:
                 lineage_entries.append(
                     LineageEntry(
@@ -127,21 +126,21 @@ class ObserverAgent(AgentBase):
         # Detect anomalies
         sigma_thresh = self.config.anomaly_sigma_threshold or 2.0
         anomaly = detect_anomaly(
-            time=lc_data["time"],
-            flux=lc_data["flux"],
-            flux_err=lc_data["flux_err"],
-            quarter=lc_data["quarter"],
+            time=lc_data.time,
+            flux=lc_data.flux,
+            flux_err=lc_data.flux_err,
+            quarter=lc_data.quarter,
             sigma_threshold=sigma_thresh,
-            transit_period=transit_params.get("period_days"),
-            transit_duration=transit_params.get("duration_hours", 4.0) / 24.0,
+            transit_period=transit_params.period_days,
+            transit_duration=transit_params.duration_hours / 24.0,
         )
         if anomaly is not None:
             anomaly_records.append(anomaly)
 
         # Score confidence from transit parameters
-        depth = transit_params.get("depth", 0.0)
-        rp_rs = transit_params.get("rp_rs", 0.0)
-        period = transit_params.get("period_days", 0.0)
+        depth = transit_params.depth
+        rp_rs = transit_params.rp_rs
+        period = transit_params.period_days
 
         # Heuristic scoring: deeper, regular transits with reasonable Rp/Rs → higher confidence
         score = _compute_observer_score(depth=depth, rp_rs=rp_rs, period=period)

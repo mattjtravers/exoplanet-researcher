@@ -7,6 +7,8 @@ import uuid
 
 import numpy as np
 
+from src.schemas.tools import TransitFitResult
+
 
 def fit_transit(
     time: list[float],
@@ -15,7 +17,7 @@ def fit_transit(
     target_id: str,
     period_min: float = 0.5,
     period_max: float = 50.0,
-) -> dict:
+) -> TransitFitResult:
     """Fit a transit model using BLS periodogram and extract key parameters.
 
     Args:
@@ -27,7 +29,7 @@ def fit_transit(
         period_max: Maximum trial period in days.
 
     Returns:
-        Dict with keys: period_days, depth, duration_hours, rp_rs, target_id, tool_call_id.
+        TransitFitResult with period_days, depth, duration_hours, rp_rs, target_id, tool_call_id.
     """
     time_arr = np.asarray(time, dtype=float)
     flux_arr = np.asarray(flux, dtype=float)
@@ -69,11 +71,11 @@ def fit_transit(
     # Rp/Rs from depth (depth ≈ (Rp/Rs)^2)
     rp_rs = math.sqrt(depth) if depth > 0 else 0.0
 
-    return {
-        "target_id": target_id,
-        "period_days": best_period,
-        "depth": depth,
-        "duration_hours": best_duration * 24.0,
-        "rp_rs": rp_rs,
-        "tool_call_id": str(uuid.uuid4()),
-    }
+    return TransitFitResult(
+        target_id=target_id,
+        period_days=best_period,
+        depth=depth,
+        duration_hours=best_duration * 24.0,
+        rp_rs=rp_rs,
+        tool_call_id=str(uuid.uuid4()),
+    )

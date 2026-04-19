@@ -5,21 +5,23 @@
 
 ## Summary
 
-XPI is a five-agent LangGraph pipeline that independently vets exoplanet candidates by
+XPI is a five-agent PydanticAI pipeline that independently vets exoplanet candidates by
 reconciling NASA photometric data with peer-reviewed literature. The Observer analyses
 light curves quantitatively; the Scholar retrieves and synthesises literature agentically;
-the Distillation Agent compresses papers to target-relevant content; the Synthesizer
-resolves conflicts and issues the Vetting Report; the Validator enforces physical law
-constraints. Every parameter is traced in a JSON-LD Lineage Map. A standalone Benchmark
-Runner evaluates accuracy against a 40-object Golden Dataset.
+the Distillation Agent compresses papers to target-relevant content using a PydanticAI Agent
+with a YAML agent spec; the Synthesizer resolves conflicts and issues the Vetting Report;
+the Validator enforces physical law constraints. All tool functions return typed Pydantic
+models. Every parameter is traced in a JSON-LD Lineage Map. A standalone Benchmark Runner
+evaluates accuracy against a 40-object Golden Dataset, complemented by pydantic_evals
+evaluation datasets for per-agent quality measurement.
 
 ---
 
 ## Technical Context
 
 **Language/Version**: Python 3.11+
-**Primary Dependencies**: LangGraph, LangChain, PydanticAI, lightkurve, astropy, numpy,
-matplotlib, uv, ruff, pytest, mcp (Python MCP SDK)
+**Primary Dependencies**: PydanticAI, pydantic-evals, lightkurve, astropy, numpy,
+matplotlib, pyyaml, anthropic, uv, ruff, pytest, mcp (Python MCP SDK)
 **Storage**: File-based — JSON-LD Lineage Maps and Markdown Vetting Reports written to
 `outputs/`; benchmark results versioned in `benchmarks/history/`
 **Testing**: pytest (unit + integration); mathematical tests against known ephemerides
@@ -42,12 +44,13 @@ only); token budget enforced per agent via config; no hardcoded model identifier
 | I. Reasoning Transparency & Scientific Lineage | ✅ | Phase 2 (Lineage Map generator) + all agents emit citations |
 | II. Type-Safe Scientific Rigor | ✅ | Phase 1 (PydanticAI schemas + FR-033 inter-agent contracts) |
 | III. Test-First Development | ✅ | Every task carries a Test Plan; red before green enforced |
-| IV. DAG-Driven Single-Responsibility Agents | ✅ | Phase 4 (LangGraph DAG; 5 agents, single bounded roles) |
+| IV. DAG-Driven Single-Responsibility Agents | ✅ | Phase 4 (PydanticAI Agent Specs + sequential DAG; 5 agents, single bounded roles) |
 | V. Simplicity & YAGNI | ✅ | Single-candidate scope; no batch, no speculative features |
 | VI. Agentic RAG with Anomaly Detection | ✅ | Phase 2 (Observer anomaly) + Phase 3 (Scholar iterative RAG) |
 | VII. Uncertainty Quantification & Conflict Detection | ✅ | Phase 4 (Conflict Flag + reasoning loop) |
 | VIII. Benchmark-Driven Accuracy Validation | ✅ | Phase 5 (Benchmark Runner + Golden Dataset + F1 gate) |
 | IX. Context Efficiency & Token Budget | ✅ | Phase 3 (Distillation Agent + configurable budget) |
+| X. Evaluation-Driven Quality Assurance | ✅ | src/evals/ (pydantic_evals Dataset + Evaluator per LLM-backed agent) |
 
 **Post-Design Re-check**: See bottom of this document after Phase 1 artifacts are complete.
 

@@ -7,18 +7,19 @@ import uuid
 import requests
 
 from src.errors import ArchiveConnectionError, ArchiveNotFoundError
+from src.schemas.tools import StellarPropertiesResult
 
 _NASA_EXOPLANET_API = "https://exoplanetarchive.ipac.caltech.edu/TAP/sync"
 
 
-def get_stellar_properties(target_id: str) -> dict:
+def get_stellar_properties(target_id: str) -> StellarPropertiesResult:
     """Retrieve host star physical properties from the NASA Exoplanet Archive.
 
     Args:
         target_id: KIC/TIC/TOI identifier (e.g. "KIC-11442793").
 
     Returns:
-        Dict with stellar properties and tool_call_id.
+        StellarPropertiesResult with stellar properties and tool_call_id.
 
     Raises:
         ArchiveNotFoundError: If the target is not found.
@@ -53,13 +54,13 @@ def get_stellar_properties(target_id: str) -> dict:
 
     row = data[0] if isinstance(data, list) and data else {}
 
-    return {
-        "target_id": target_id,
-        "stellar_radius_rsun": row.get("radius"),
-        "stellar_mass_msun": row.get("mass"),
-        "stellar_teff_k": row.get("teff"),
-        "log_g": row.get("logg"),
-        "metallicity_dex": row.get("feh"),
-        "source_catalog": "Kepler Stellar Properties Catalog DR25",
-        "tool_call_id": str(uuid.uuid4()),
-    }
+    return StellarPropertiesResult(
+        target_id=target_id,
+        stellar_radius_rsun=row.get("radius"),
+        stellar_mass_msun=row.get("mass"),
+        stellar_teff_k=row.get("teff"),
+        log_g=row.get("logg"),
+        metallicity_dex=row.get("feh"),
+        source_catalog="Kepler Stellar Properties Catalog DR25",
+        tool_call_id=str(uuid.uuid4()),
+    )

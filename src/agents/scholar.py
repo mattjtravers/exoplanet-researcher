@@ -58,11 +58,13 @@ class ScholarAgent(AgentBase):
         max_iters = self.config.max_iterations or 3
 
         # Run iterative search
-        raw_results, queries_issued = iterative_search(
+        search_result = iterative_search(
             candidate=candidate,
             anomaly_hints=anomaly_hints,
             max_iterations=max_iters,
         )
+        raw_papers = [(p.source_id, p.abstract) for p in search_result.papers]
+        queries_issued = search_result.queries_issued
 
         # If anomaly directives were given, ensure at least one query contains them
         if anomaly_hints:
@@ -70,14 +72,14 @@ class ScholarAgent(AgentBase):
                 any(hint.replace("_", " ") in q for hint in anomaly_hints)
                 for q in queries_issued
             )
-            if not has_directive_query and raw_results == []:
+            if not has_directive_query and raw_papers == []:
                 # Add a directive-specific query
                 directive_query = f"{candidate.target_id} {' '.join(anomaly_hints).replace('_', ' ')}"
-                queries_issued.append(directive_query)
+                queries_issued = list(queries_issued) + [directive_query]
                 from src.tools.rag_tools import search_arxiv
                 try:
                     extra = search_arxiv(directive_query, max_results=3)
-                    raw_results.extend(extra)
+                    raw_papers.extend((p.source_id, p.abstract) for p in extra)
                 except Exception:
                     pass
 
@@ -85,9 +87,9 @@ class ScholarAgent(AgentBase):
         distil_config = AgentConfig(token_budget=self.config.token_budget // 2)
         distillation = DistillationAgent(config=distil_config)
 
-        if raw_results:
+        if raw_papers:
             distil_out = distillation.run(
-                raw_papers=raw_results[:10],  # limit to 10 papers
+                raw_papers=raw_papers[:10],  # limit to 10 papers
                 target_star_id=candidate.target_id,
             )
             distilled_records = distil_out.records

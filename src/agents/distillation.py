@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
+import yaml
 from pydantic import BaseModel
+from pydantic_ai import Agent
 
 from src.agents.base import AgentBase
 from src.schemas.config import AgentConfig
@@ -24,6 +27,44 @@ class DistillationOutput(BaseModel):
 
     records: list[DistilledLiteratureRecord]
     total_tokens_consumed: int
+
+
+class DistillationExtraction(BaseModel):
+    """Typed LLM output for a single paper distillation."""
+
+    extracted_parameters: dict[str, float | str] = {}
+    disposition_notes: str | None = None
+    citation_string: str
+
+
+# ---------------------------------------------------------------------------
+# PydanticAI Agent — lazy singleton
+# ---------------------------------------------------------------------------
+
+_distillation_agent: Agent | None = None
+
+
+def _build_distillation_agent() -> Agent:
+    spec_path = Path(__file__).parent.parent.parent / "config" / "agent_specs" / "distillation.yaml"
+    spec = yaml.safe_load(spec_path.read_text())
+    return Agent(
+        model=spec["model"],
+        output_type=DistillationExtraction,
+        system_prompt=spec["system_prompt"],
+        retries=spec.get("retries", 2),
+    )
+
+
+def _get_distillation_agent() -> Agent:
+    global _distillation_agent
+    if _distillation_agent is None:
+        _distillation_agent = _build_distillation_agent()
+    return _distillation_agent
+
+
+# ---------------------------------------------------------------------------
+# Agent class
+# ---------------------------------------------------------------------------
 
 
 class DistillationAgent(AgentBase):
@@ -50,7 +91,7 @@ class DistillationAgent(AgentBase):
         total_tokens = 0
 
         for source_id, text in raw_papers:
-            # Estimate tokens (rough: ~4 chars per token)
+            # Estimate tokens (rough: ~4 chars per token) for budget check
             estimated_tokens = max(1, len(text) // 4)
             self.check_token_budget(estimated_tokens)
 
@@ -61,8 +102,8 @@ class DistillationAgent(AgentBase):
                 token_estimate=estimated_tokens,
             )
             records.append(record)
-            self.consume_tokens(estimated_tokens)
-            total_tokens += estimated_tokens
+            self.consume_tokens(record.distillation_token_count)
+            total_tokens += record.distillation_token_count
 
         return DistillationOutput(records=records, total_tokens_consumed=total_tokens)
 
@@ -75,12 +116,11 @@ class DistillationAgent(AgentBase):
     ) -> DistilledLiteratureRecord:
         """Extract target-relevant parameters from a paper.
 
-        This uses an LLM call if ANTHROPIC_API_KEY is set; otherwise falls back
-        to a keyword-based extraction for testing.
+        Uses PydanticAI Agent if ANTHROPIC_API_KEY is set; otherwise falls back
+        to keyword-based extraction for testing.
         """
         source_type = "arxiv" if _looks_like_arxiv(source_id) else "ads"
 
-        # Try LLM-based extraction if API key present
         api_key = os.environ.get("ANTHROPIC_API_KEY")
         if api_key and len(text) > 100:
             try:
@@ -89,12 +129,10 @@ class DistillationAgent(AgentBase):
                     source_type=source_type,
                     text=text,
                     target_star_id=target_star_id,
-                    token_estimate=token_estimate,
                 )
             except Exception:
                 pass  # Fall through to keyword extraction
 
-        # Keyword-based fallback for testing / offline use
         return _keyword_distil(
             source_id=source_id,
             source_type=source_type,
@@ -109,38 +147,29 @@ class DistillationAgent(AgentBase):
         source_type: str,
         text: str,
         target_star_id: str,
-        token_estimate: int,
     ) -> DistilledLiteratureRecord:
-        """LLM-based parameter extraction."""
-        import anthropic
+        """PydanticAI-based parameter extraction with typed output and retry."""
+        from pydantic_ai import UsageLimits
 
-        client = anthropic.Anthropic()
-        prompt = (
-            f"Extract parameters for star {target_star_id} from this paper abstract. "
-            f"Return a JSON object with keys: extracted_parameters (dict), "
-            f"disposition_notes (string or null), citation_string (full verbatim citation).\n\n"
-            f"Abstract:\n{text[:2000]}"
+        agent = _get_distillation_agent()
+        remaining = self.config.token_budget - self._tokens_used
+        prompt = f"Target star: {target_star_id}\nSource: {source_id}\n\nAbstract:\n{text[:2000]}"
+
+        result = agent.run_sync(
+            prompt,
+            usage_limits=UsageLimits(total_tokens_limit=max(remaining, 500)),
         )
-        response = client.messages.create(
-            model=os.environ.get("XPI_MODEL_ID", "claude-haiku-4-5-20251001"),
-            max_tokens=500,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        import json
-        content = response.content[0].text
-        try:
-            data = json.loads(content)
-        except json.JSONDecodeError:
-            data = {}
+        extraction: DistillationExtraction = result.output
+        actual_tokens = result.usage().total_tokens
 
         return DistilledLiteratureRecord(
             source_id=source_id,
             source_type=source_type,
             target_star_id=target_star_id,
-            extracted_parameters=data.get("extracted_parameters", {}),
-            disposition_notes=data.get("disposition_notes"),
-            citation_string=data.get("citation_string") or f"[{source_id}]",
-            distillation_token_count=token_estimate,
+            extracted_parameters=extraction.extracted_parameters,
+            disposition_notes=extraction.disposition_notes,
+            citation_string=extraction.citation_string or f"[{source_id}]",
+            distillation_token_count=actual_tokens,
         )
 
 
@@ -162,19 +191,16 @@ def _keyword_distil(
     extracted: dict[str, float | str] = {}
     disposition_notes = None
 
-    # Look for period mentions
     period_match = re.search(r"period[:\s]+(\d+\.?\d*)\s*days?", text, re.IGNORECASE)
     if period_match:
         extracted["period_days"] = float(period_match.group(1))
 
-    # Look for disposition keywords
     text_lower = text.lower()
     if "confirmed" in text_lower and "planet" in text_lower:
         disposition_notes = "Paper confirms planetary nature."
     elif "false positive" in text_lower or "eclipsing binary" in text_lower:
         disposition_notes = "Paper suggests false positive (eclipsing binary)."
 
-    # Build a minimal citation string
     citation_string = f"[{source_id}] {text[:80].strip()}..."
 
     return DistilledLiteratureRecord(

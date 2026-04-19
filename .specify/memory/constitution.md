@@ -1,4 +1,4 @@
-<!-- v1.2.1 | Ratified: 2026-04-09 | Last Amended: 2026-04-09 -->
+<!-- v1.3.0 | Ratified: 2026-04-09 | Last Amended: 2026-04-19 -->
 
 # Exoplanet Investigator (XPI) Constitution
 
@@ -14,9 +14,11 @@ machine-readable and stored alongside the report. Black-box outputs are prohibit
 
 ### II. Type-Safe Scientific Rigor
 
-All inter-agent data MUST use PydanticAI schemas. Physical constraints (mass-radius
-relationships, transit depth bounds) MUST be schema validators — not runtime checks.
-Validation failures MUST surface as typed errors; silent data corruption is prohibited.
+All inter-agent data AND all tool return values MUST use typed Pydantic models (no bare
+`dict` or `tuple` returns from tools). Physical constraints (mass-radius relationships,
+transit depth bounds) MUST be schema validators — not runtime checks. Validation failures
+MUST surface as typed errors; silent data corruption is prohibited. All LLM-backed agents
+MUST be defined as PydanticAI `Agent` instances with a typed `output_type`.
 
 ### III. Test-First Development (NON-NEGOTIABLE)
 
@@ -26,9 +28,12 @@ Complexity Tracking table.
 
 ### IV. DAG-Driven Single-Responsibility Agents
 
-The system MUST be a LangGraph DAG. Each agent (Observer, Scholar, Synthesizer,
-Validator) MUST have one bounded responsibility and MUST NOT perform another agent's
-work. Recursive self-correction loops MUST have a defined maximum iteration count.
+The system MUST use a DAG-style sequential orchestration. LLM-backed agents MUST be
+defined using PydanticAI `Agent` with YAML Agent Specs (`config/agent_specs/*.yaml`)
+declaring at minimum: model identifier, system prompt, and retry count. Each agent
+(Observer, Scholar, Synthesizer, Validator) MUST have one bounded responsibility and
+MUST NOT perform another agent's work. Recursive self-correction loops MUST have a
+defined maximum iteration count.
 
 ### V. Simplicity & YAGNI
 
@@ -68,6 +73,14 @@ agent MUST operate within a configurable token budget (not hardcoded); exceeding
 MUST raise a typed error. Parameters and citations feeding the Reasoning Trace MUST be
 preserved verbatim through distillation.
 
+### X. Evaluation-Driven Quality Assurance
+
+Agent output quality MUST be measurable. At least one `pydantic_evals.Dataset` MUST
+exist for each LLM-backed agent, with named `Evaluator` classes covering key output
+dimensions (e.g., parameter extraction completeness, disposition accuracy). Evaluation
+datasets MUST be runnable independently of the benchmark runner without live LLM calls.
+Ad-hoc LLM quality checks without a formal evaluator are prohibited.
+
 ## Technology Stack & Standards
 
 Canonical stack — deviations require Complexity Tracking justification in the feature plan.
@@ -76,8 +89,9 @@ Canonical stack — deviations require Complexity Tracking justification in the 
 |---------|-----------------|
 | Language | Python 3.11+ |
 | Package manager | `uv` (venv isolation; no system-wide installs) |
-| Orchestration | LangChain Deep Agents / LangGraph |
-| Validation | PydanticAI (single source of truth for schemas) |
+| Orchestration | PydanticAI Agent Specs (`config/agent_specs/*.yaml`) + sequential DAG |
+| Validation | PydanticAI — typed `output_type` on all LLM agents; Pydantic `BaseModel` on all tool returns |
+| Evaluation | `pydantic_evals` — named `Dataset` + `Evaluator` per LLM-backed agent |
 | LLM (runtime) | Model-agnostic; backend set via env var / config — no hardcoded model |
 | Data tools | `lightkurve`, `astropy`, `numpy`, `matplotlib` |
 | NASA data access | MCP server only — no direct HTTP calls in agent code |
@@ -105,4 +119,4 @@ other artefact, this document takes precedence.
 - **Compliance gate**: Constitution Check in `plan-template.md` MUST be evaluated at
   plan start and re-checked after Phase 1. Unrecorded violations block plan approval.
 
-**Version**: 1.2.1 | **Ratified**: 2026-04-09 | **Last Amended**: 2026-04-09
+**Version**: 1.3.0 | **Ratified**: 2026-04-09 | **Last Amended**: 2026-04-19

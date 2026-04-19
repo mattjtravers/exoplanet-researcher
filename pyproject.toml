@@ -4,11 +4,9 @@ version = "0.1.0"
 description = "XPI — Independent Agentic Exoplanet Vetting"
 requires-python = ">=3.11"
 dependencies = [
-    "langgraph>=0.2.0",
-    "langchain>=0.3.0",
-    "langchain-anthropic>=0.3.0",
     "pydantic>=2.0.0",
     "pydantic-ai>=0.0.14",
+    "pydantic-evals>=0.0.14",
     "lightkurve>=2.4.0",
     "astropy>=6.0.0",
     "numpy>=1.26.0",

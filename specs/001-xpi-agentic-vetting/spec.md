@@ -302,6 +302,16 @@ the benchmark history.
 - **FR-033**: All data passed between agents MUST conform to a defined schema contract
   for that interface. A schema validation failure MUST surface as an explicit typed
   error — silent passing of malformed or unvalidated data between agents is prohibited.
+- **FR-034**: All tool functions (data retrieval, transit fitting, literature search)
+  MUST return typed, schema-validated model instances — raw untyped containers (dicts,
+  tuples) are prohibited as tool return types.
+- **FR-035**: Every LLM-backed agent MUST be defined using a declarative configuration
+  that specifies at minimum: the model identifier, the system prompt, and the retry
+  policy. The configuration MUST be readable without executing code.
+- **FR-036**: At least one formal evaluation dataset MUST exist for each LLM-backed
+  agent, with named evaluator functions covering key output quality dimensions (e.g.,
+  parameter extraction completeness, citation presence, disposition accuracy). Evaluation
+  MUST be runnable independently of the benchmark runner and without live model calls.
 
 ### Key Entities
 

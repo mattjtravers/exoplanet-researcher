@@ -9,12 +9,13 @@ import requests
 
 from src.errors import ArchiveConnectionError, ConfigError
 from src.schemas.candidate import CandidateTarget
+from src.schemas.tools import LiteraturePaper, LiteratureSearchResult
 
 # ---------------------------------------------------------------------------
 # ArXiv search tool (T028)
 # ---------------------------------------------------------------------------
 
-def search_arxiv(query: str, max_results: int = 10) -> list[tuple[str, str]]:
+def search_arxiv(query: str, max_results: int = 10) -> list[LiteraturePaper]:
     """Search ArXiv for papers matching the query.
 
     Args:
@@ -22,7 +23,7 @@ def search_arxiv(query: str, max_results: int = 10) -> list[tuple[str, str]]:
         max_results: Maximum number of results to return.
 
     Returns:
-        List of (arxiv_id, abstract) tuples.
+        List of LiteraturePaper results.
 
     Raises:
         ValueError: If query is empty.
@@ -44,7 +45,14 @@ def search_arxiv(query: str, max_results: int = 10) -> list[tuple[str, str]]:
             sort_by=arxiv.SortCriterion.Relevance,
         )
         results = list(client.results(search))
-        return [(r.entry_id.split("/")[-1], r.summary) for r in results]
+        return [
+            LiteraturePaper(
+                source_id=r.entry_id.split("/")[-1],
+                abstract=r.summary,
+                source_type="arxiv",
+            )
+            for r in results
+        ]
     except Exception as exc:
         error_msg = str(exc).lower()
         if any(kw in error_msg for kw in ["connection", "timeout", "network"]):
@@ -60,7 +68,7 @@ def search_arxiv(query: str, max_results: int = 10) -> list[tuple[str, str]]:
 _ADS_API_BASE = "https://api.adsabs.harvard.edu/v1/search/query"
 
 
-def search_ads(query: str, max_results: int = 10) -> list[tuple[str, str]]:
+def search_ads(query: str, max_results: int = 10) -> list[LiteraturePaper]:
     """Search NASA ADS for papers matching the query.
 
     Args:
@@ -68,7 +76,7 @@ def search_ads(query: str, max_results: int = 10) -> list[tuple[str, str]]:
         max_results: Maximum number of results to return.
 
     Returns:
-        List of (bibcode, abstract) tuples.
+        List of LiteraturePaper results.
 
     Raises:
         ConfigError: If ADS_API_TOKEN is not set.
@@ -98,7 +106,15 @@ def search_ads(query: str, max_results: int = 10) -> list[tuple[str, str]]:
         response.raise_for_status()
         data = response.json()
         docs = data.get("response", {}).get("docs", [])
-        return [(d["bibcode"], d.get("abstract", "")) for d in docs if "bibcode" in d]
+        return [
+            LiteraturePaper(
+                source_id=d["bibcode"],
+                abstract=d.get("abstract", ""),
+                source_type="ads",
+            )
+            for d in docs
+            if "bibcode" in d
+        ]
     except requests.exceptions.ConnectionError as exc:
         raise ArchiveConnectionError(str(exc)) from exc
     except requests.exceptions.Timeout as exc:
@@ -157,7 +173,7 @@ def iterative_search(
     candidate: CandidateTarget,
     anomaly_hints: list[str] | None = None,
     max_iterations: int = 3,
-) -> tuple[list[tuple[str, str]], list[str]]:
+) -> LiteratureSearchResult:
     """Run iterative ArXiv + ADS searches with query broadening.
 
     Args:
@@ -166,10 +182,10 @@ def iterative_search(
         max_iterations: Maximum number of search rounds.
 
     Returns:
-        Tuple of (results, queries_issued) where results are (source_id, abstract) pairs.
+        LiteratureSearchResult with collected papers and issued queries.
     """
     queries = build_queries(candidate, anomaly_hints)
-    all_results: list[tuple[str, str]] = []
+    all_results: list[LiteraturePaper] = []
     queries_issued: list[str] = []
 
     for i, query in enumerate(queries[:max_iterations]):
@@ -199,4 +215,4 @@ def iterative_search(
         if i < len(queries) - 1:
             time.sleep(0.5)
 
-    return all_results, queries_issued
+    return LiteratureSearchResult(papers=all_results, queries_issued=queries_issued)

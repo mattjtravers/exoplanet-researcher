@@ -6,13 +6,14 @@ import uuid
 from typing import Literal
 
 from src.errors import ArchiveConnectionError, ArchiveNotFoundError
+from src.schemas.tools import LightCurveResult
 
 
 def get_light_curve(
     target_id: str,
     quarter: int,
     mission: Literal["Kepler", "TESS"] = "Kepler",
-) -> dict:
+) -> LightCurveResult:
     """Retrieve and detrend the light curve for a given target and quarter.
 
     Args:
@@ -21,7 +22,7 @@ def get_light_curve(
         mission: Observing mission — "Kepler" or "TESS".
 
     Returns:
-        Dict with keys: target_id, quarter, time, flux, flux_err, cadence, tool_call_id.
+        LightCurveResult with target_id, quarter, time, flux, flux_err, cadence, tool_call_id.
 
     Raises:
         ArchiveNotFoundError: If no data exists for this target/quarter.
@@ -70,15 +71,15 @@ def get_light_curve(
 
         cadence = "short" if len(time) > 5000 else "long"
 
-        return {
-            "target_id": target_id,
-            "quarter": quarter,
-            "time": time,
-            "flux": flux,
-            "flux_err": flux_err,
-            "cadence": cadence,
-            "tool_call_id": str(uuid.uuid4()),
-        }
+        return LightCurveResult(
+            target_id=target_id,
+            quarter=quarter,
+            time=time,
+            flux=flux,
+            flux_err=flux_err,
+            cadence=cadence,
+            tool_call_id=str(uuid.uuid4()),
+        )
 
     except (ArchiveNotFoundError, ArchiveConnectionError):
         raise

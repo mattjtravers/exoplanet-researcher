@@ -31,15 +31,14 @@ def _make_synthetic_lc(period_days: float = 14.64, depth: float = 0.003):
 def test_transit_fitter_returns_period():
     time, flux, flux_err = _make_synthetic_lc()
     result = fit_transit(time=time, flux=flux, flux_err=flux_err, target_id="KIC-test")
-    assert "period_days" in result
-    assert result["period_days"] > 0
+    assert result.period_days > 0
 
 
 def test_transit_fitter_period_within_5_percent():
     known_period = _KNOWN_PERIOD_DAYS
     time, flux, flux_err = _make_synthetic_lc(period_days=known_period)
     result = fit_transit(time=time, flux=flux, flux_err=flux_err, target_id="KIC-test")
-    fitted = result["period_days"]
+    fitted = result.period_days
     relative_error = abs(fitted - known_period) / known_period
     assert relative_error < 0.05, (
         f"Period {fitted:.4f} not within 5% of known {known_period:.4f} "
@@ -51,7 +50,7 @@ def test_transit_fitter_depth_within_10_percent():
     known_depth = _KNOWN_DEPTH
     time, flux, flux_err = _make_synthetic_lc(depth=known_depth)
     result = fit_transit(time=time, flux=flux, flux_err=flux_err, target_id="KIC-test")
-    fitted_depth = result.get("depth")
+    fitted_depth = result.depth
     assert fitted_depth is not None
     relative_error = abs(fitted_depth - known_depth) / known_depth
     assert relative_error < 0.10, (
@@ -63,19 +62,16 @@ def test_transit_fitter_depth_within_10_percent():
 def test_transit_fitter_returns_rp_rs():
     time, flux, flux_err = _make_synthetic_lc()
     result = fit_transit(time=time, flux=flux, flux_err=flux_err, target_id="KIC-test")
-    assert "rp_rs" in result
-    assert result["rp_rs"] > 0
+    assert result.rp_rs > 0
 
 
 def test_transit_fitter_returns_tool_call_id():
     time, flux, flux_err = _make_synthetic_lc()
     result = fit_transit(time=time, flux=flux, flux_err=flux_err, target_id="KIC-test")
-    assert "tool_call_id" in result
-    assert len(result["tool_call_id"]) > 0
+    assert len(result.tool_call_id) > 0
 
 
 def test_transit_fitter_returns_duration():
     time, flux, flux_err = _make_synthetic_lc()
     result = fit_transit(time=time, flux=flux, flux_err=flux_err, target_id="KIC-test")
-    assert "duration_hours" in result
-    assert result["duration_hours"] > 0
+    assert result.duration_hours > 0

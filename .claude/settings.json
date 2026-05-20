@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(uv sync:*)",
-      "Bash(uv run:*)",
-      "Bash(.venv/bin/python -m pytest tests/unit/test_schemas_candidate.py tests/unit/test_schemas_confidence.py tests/unit/test_schemas_config.py tests/unit/test_schemas_benchmark.py tests/unit/test_schemas_report.py -x -q)"
-    ]
-  }
-}

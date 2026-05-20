@@ -1,48 +1,32 @@
 {
-   "name": "AI Sandbox",
-   "image": "mcr.microsoft.com/devcontainers/python:3.11",
+   "name": "Exoplanet Researcher",
    "features": {
-    "ghcr.io/devcontainers/features/node:1": {}
+      "ghcr.io/jsburckhardt/devcontainer-features/uv:1": {},
+      "ghcr.io/anthropics/devcontainer-features/claude-code:1": {},
    },
    "customizations": {
-       "vscode": {
-           "extensions": [
-               "ms-python.python",
-               "ms-python.debugpy",
-               "charliermarsh.ruff",
-               "anthropic.claude-code"
-           ],
-           "settings": {
-               "python.defaultInterpreterPath": "/usr/local/bin/python",
-               "python.terminal.activateEnvInSelectedTerminal": true,
-               "python-envs.alwaysUseUv": true,
-               "[python]": {
-                   "editor.formatOnSave": true,
-                   "editor.defaultFormatter": "charliermarsh.ruff",
-                   "editor.codeActionsOnSave": {
-                       "source.organizeImports": "always",
-                       "source.fixAll": "always"
-                   }
-               },
-              "claudeCode.preferredLocation": "sidebar",
-              "claude.dangerouslySkipPermissions": true,
-              "claude.initialPermissionMode": "bypassPermissions",
-              "terminal.integrated.profiles.linux": {
-                "bash": {
-                  "path": "bash",
-                  "icon": "terminal-bash"
-                }
-              }
-           }
-       }
+      "vscode": {
+         "extensions": [
+            "ms-python.python",
+            "ms-python.debugpy",
+            "charliermarsh.ruff",
+            "atman-dev.openspec-for-copilot"
+         ],
+         "settings": {
+            "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+            "[python]": {
+               "editor.formatOnSave": true,
+               "editor.defaultFormatter": "charliermarsh.ruff",
+               "editor.codeActionsOnSave": {
+                  "source.organizeImports.ruff": "always",
+                  "source.fixAll.ruff": "always"
+               }
+            }
+         }
+      }
    },
-   "postCreateCommand": "curl -LsSf https://astral.sh/uv/install.sh | sh && \\
-        uv tool install specify-cli --from git+https://github.com/github/spec-kit.git && \\
-        curl -fsSL https://claude.ai/install.sh | bash && \\
+   "postCreateCommand": "uv venv && uv sync && \\
+        npm install -g @fission-ai/openspec@latest && \\
         claude plugin marketplace add pydantic/skills && \\
-        claude plugin install ai@pydantic-skills",
-   "remoteUser": "vscode",
-   "remoteEnv": {
-     "CLAUDE_CONFIG_DIR": "/home/vscode/.claude"
-   }
+        claude plugin install ai@pydantic-skills"
 }

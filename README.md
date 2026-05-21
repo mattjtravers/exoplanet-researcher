@@ -49,7 +49,7 @@ The pipeline operates as a deterministic, type-safe state machine utilizing `pyd
 
 ## The Spec-Driven Pattern
 
-This project implements a strict Spec-Driven Development (SDD) workflow using **OpenSpec** to guarantee zero-maintenance stability and complete execution predictability.
+This project implements a Spec-Driven Development (SDD) workflow using OpenSpec to improve system predictability, enforce strict interface boundaries, and minimize configuration drift.
 
 * **Living Specifications via OpenSpec:** Rather than relying on unstructured prompts, feature requirements are managed through OpenSpec's delta specs. This ensures the system's "source of truth" documentation evolves bidirectionally with the codebase, trapping hallucinations at the planning stage before implementation begins.
 * **Bypassing Framework Bloat (No LangChain/LangGraph):** This repository intentionally avoids the heavy, opaque abstraction layers of the LangChain ecosystem. By orchestrating a native `pydantic_graph` state machine, the control flow is explicitly driven by Python type hints rather than loose graph configurations, ensuring low memory overhead and immediate code scannability.

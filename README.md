@@ -1,10 +1,9 @@
-# exoplanet-researcher
-AI agent workflow to explore research validation
-# XPI — Independent Agentic Exoplanet Vetting
+
+# Exoplanet Researcher — Independent Agentic Exoplanet Vetting
 
 ## Overview
 
-XPI is a lightweight, multi-agent pipeline built to automate the vetting of exoplanet candidates by cross-referencing quantitative photometric data with scientific literature. It eliminates manual verification bottlenecks, transforming raw transit observations and unstructured research into transparent, fully reproducible Vetting Reports backed by mathematical confidence scores.
+Exoplanet Researcher is a lightweight, multi-agent pipeline built to automate the vetting of exoplanet candidates by cross-referencing quantitative photometric data with scientific literature. It eliminates manual verification bottlenecks, transforming raw transit observations and unstructured research into transparent, fully reproducible Vetting Reports backed by mathematical confidence scores.
 
 ---
 
@@ -63,7 +62,7 @@ This project implements a strict Spec-Driven Development (SDD) workflow using **
 ## Quick Start (TBD)
 
 ```bash
-git clone https://github.com/yourusername/xpi.git && cd xpi
+git clone https://github.com/mattjtravers/exoplanet-researcher.git && cd exoplanet-researcher
 pip install -r requirements.txt
 python src/main.py --target "KIC-10666592"
 

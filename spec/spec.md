@@ -1,4 +1,4 @@
-# Product Specification: XPI — Independent Agentic Exoplanet Vetting
+# Product Specification: Exoplanet Researcher — Independent Agentic Exoplanet Vetting
 
 ## Overview
 XPI is a portfolio demonstration of a multi-agent pipeline designed to vet exoplanet candidates. It analyzes photometric data and scientific literature, flags conflicting evidence, and produces a reproducible Vetting Report. Built entirely within the Pydantic AI ecosystem, the framework uses a deterministic `pydantic_graph` state machine to orchestrate agents, standardizes external tools via the Model Context Protocol (MCP), and tracks full-stack execution observability using Pydantic Logfire. The design focuses on clean code structure, strict typing, and local reproducibility for technical reviewers.

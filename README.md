@@ -59,11 +59,18 @@ This project implements a strict Spec-Driven Development (SDD) workflow using **
 
 ---
 
-## Quick Start (TBD)
+## Quick Start (Zero-Configuration Cloud Run)
+
+THIS OPERATION IS IN PROGRESS AND NOT CURRENTLY AVAILABLE
+
+This project is fully optimized for **GitHub Codespaces**. Reviewers do not need to configure local Python environments, manage dependencies, or provide personal LLM API keys; the workspace automatically leverages your native `GITHUB_TOKEN` to securely authenticate against the GitHub Models marketplace for free.
+
+1. Click the **Open in GitHub Codespaces** badge above to launch an isolated cloud workspace.
+2. Once the terminal initializes in your browser, execute the pipeline script directly:
 
 ```bash
-git clone https://github.com/mattjtravers/exoplanet-researcher.git && cd exoplanet-researcher
-pip install -r requirements.txt
 python src/main.py --target "KIC-10666592"
 
 ```
+
+3. To view full-stack OpenTelemetry execution logs and state transitions immediately, review the auto-generated Logfire local session output linked in the terminal console.

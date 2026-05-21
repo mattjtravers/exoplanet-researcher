@@ -61,7 +61,7 @@ This project implements a Spec-Driven Development (SDD) workflow using OpenSpec 
 
 ## Quick Start (Zero-Configuration Cloud Run)
 
-THIS OPERATION IS IN PROGRESS AND NOT CURRENTLY AVAILABLE
+WORK IN PROGRESS AND NOT CURRENTLY AVAILABLE
 
 This project is fully optimized for **GitHub Codespaces**. Reviewers do not need to configure local Python environments, manage dependencies, or provide personal LLM API keys; the workspace automatically leverages your native `GITHUB_TOKEN` to securely authenticate against the GitHub Models marketplace for free.
 

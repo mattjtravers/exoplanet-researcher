@@ -1,37 +1,36 @@
 # Product Specification: XPI — Independent Agentic Exoplanet Vetting
 
 ## Overview
-XPI is an automated, multi-agent pipeline designed to vet exoplanet candidates. It analyzes photometric data and scientific literature, flags conflicting evidence, and produces a transparent, fully reproducible Vetting Report. The framework uses Pydantic AI as a lightweight agent manager, utilizing its deep integration with Pydantic for structural validation, type safety, and runtime execution control. The system enforces strict physical laws and uses probabilistic confidence scoring.
+XPI is a portfolio demonstration of a multi-agent pipeline designed to vet exoplanet candidates. It analyzes photometric data and scientific literature, flags conflicting evidence, and produces a reproducible Vetting Report. Built entirely within the Pydantic AI ecosystem, the framework uses a deterministic `pydantic_graph` state machine to orchestrate agents, standardizes external tools via the Model Context Protocol (MCP), and tracks full-stack execution observability using Pydantic Logfire. The design focuses on clean code structure, strict typing, and local reproducibility for technical reviewers.
 
 ## User Scenarios
 
-1. **Transparent Vetting Report:** A researcher submits a candidate ID (KIC/TIC/TOI). The system produces a Vetting Report with a disposition (Planet Candidate / False Positive / Inconclusive), confidence score, annotated light curve, and a reasoning trace citing data and literature.
-2. **Provenance Tracing:** A researcher uses the JSON-LD Lineage Map to trace any calculated physical parameter to its source data quarter or literature citation without rerunning the pipeline.
+1. **Local Demonstration:** A reviewer clones the repository, configures API keys locally, and submits a candidate ID (KIC/TIC/TOI). The system executes the pipeline locally and outputs a final Vetting Report and Lineage Map to the local disk.
+2. **Transparent Vetting Report:** The pipeline produces a Vetting Report with a disposition (Planet Candidate / False Positive / Inconclusive), confidence score, annotated light curve, and a reasoning trace citing data and literature.
 3. **Conflict Detection:** If quantitative data (e.g., a clean transit) and literature (e.g., known eclipsing binary) diverge beyond a threshold, the system flags a Consensus Conflict, detailing the divergence instead of averaging the scores.
-4. **Anomaly Investigation:** If an asymmetric or irregular transit is detected, the system generates an Anomaly Record and directs literature searches specifically toward non-planetary hypotheses.
-5. **System Evaluation:** A pipeline maintainer runs the Benchmark Runner against a Golden Dataset of ≥40 known objects, receiving a Confusion Matrix and F1 score to detect regressions. Developers run isolated `pydantic_evals` on the distillation agent to verify extraction quality without live LLM calls.
+4. **State Machine Resumption:** A reviewer forces an execution interruption mid-run to test durability. Using Pydantic's native `FileStatePersistence`, the graph resumes seamlessly from the local JSON snapshot without losing prior state.
+5. **System Evaluation:** Reviewers can execute the `pydantic_evals` suite to verify extraction quality and prompt boundaries without requiring a full live pipeline execution or excessive LLM API costs.
 
 ## System Requirements
 
-### 1. Multi-Agent Pipeline & Orchestration
-- The system orchestrates five specialized agents using Pydantic AI: Observer, Scholar, Distillation, Synthesizer, and Validator.
-- Pydantic AI handles agent state, system prompts, dependency injection, and tool calling across the entire pipeline.
-- The execution flow is acyclic, except for strictly bounded self-correction loops managed by the Synthesizer.
+### 1. State-Machine Orchestration (`pydantic-graph`)
+- The multi-agent workflow is explicitly defined using `GraphBuilder` and `BaseNode` subclasses.
+- The pipeline execution is modeled as a strict state machine, preventing loose, autonomous agent-to-agent chatter. Nodes (Observer, Scholar, Distillation, Synthesizer, Validator) dictate control flow by returning defined edge types (the next `BaseNode` or an `End` state).
+- A central `GraphRunContext` and `GraphState` object passes cumulative vetting data between nodes. 
 
-### 2. Strict Typing & Data Contracts
-- All inter-agent communication and state transitions rely on validated Pydantic models. Raw dictionaries and untyped tuples are prohibited.
-- All tools (`get_light_curve`, `fit_transit`, `search_arxiv`, etc.) must be registered as Pydantic AI tools and return typed Pydantic models (`LightCurveResult`, `TransitFitResult`, etc.).
+### 2. The Model Context Protocol (MCP) Standard & Data Contracts
+- All external actions (`get_light_curve`, `fit_transit`, `search_arxiv`) are decoupled from the agent definitions and hosted via a local MCP Tool Server.
+- Agents access these tools over MCP connections rather than direct function references, showcasing modern, decoupled tool integration.
+- Inter-agent payloads and `GraphState` mutations are strictly validated via Pydantic models. Raw dictionaries and untyped tuples are prohibited.
 
 ### 3. Agentic Execution & Configurations
-- LLM-backed agents rely on YAML specifications (e.g., `config/agent_specs/distillation.yaml`) defining the target model identifier, system prompt overrides, and operational bounds.
-- Pydantic AI's built-in retry mechanisms and validation error handling must be used to recover from transient API failures or malformed model responses.
-- Agents must operate within a defined token budget. Overruns must raise typed errors, prohibiting silent truncation.
+- LLM-backed nodes execute under decoupled YAML configurations defining the target model identifier, prompt configurations, and tool availability per node.
+- Pydantic AI's retry frameworks natively handle transient API failures or validation errors inside a node before returning its state.
 
-### 4. Lineage & Traceability
-- Every Vetting Report must link to a JSON-LD Lineage Map passing automated schema validation with zero unresolved parameter references.
+### 4. Traceability & Local Persistence
+- **State Persistence:** The pipeline implements `FileStatePersistence` out-of-the-box. As the graph executes, `NodeSnapshot` objects are serialized to a local `.json` file, demonstrating durable execution patterns without requiring cloud infrastructure.
+- **Unified Tracing:** Pydantic Logfire natively captures all node transitions, agent prompt payloads, MCP tool executions, and LLM inferences as OpenTelemetry spans.
 
 ### 5. Validation & Evaluations
-- **Astrophysical Constraint Enforcement:** A standalone Validator Agent enforces hard physical boundaries on final parameters (e.g., mass-radius limits, stellar density constraints). Any edge-case or failure state requires a `validator_failed` annotation.
-- **The Golden Dataset:** The system relies on a curated, static benchmark corpus consisting of ≥40 verified objects to detect pipeline performance regressions. This dataset explicitly includes a balanced distribution of true exoplanets alongside verified astrophysical false positives (such as Eclipsing Binaries and Background Blends). The presence of false positives is mathematically mandatory to calculate a complete Confusion Matrix, allowing the evaluation suite to measure Precision, Recall, and F1-Scores without signal bias.
-- **Offline vs. Inline Validation Architecture:** - *Inline Validation:* Handled strictly via runtime Pydantic structural validation. If an agent emits a malformed data payload during a run, Pydantic AI's built-in retry framework intercepts and corrects the schema violation immediately.
-  - *Offline Evaluation (`src/evals/`):* Quality assessments of agent extraction accuracy, prompt effectiveness, and semantic reasoning are executed exclusively offline using `pydantic_evals`. Running these checks asynchronously separates functional execution from meta-analysis, isolates production performance from test-induced latency, and prevents the compounding LLM token costs associated with live grading or "judge" LLM calls.
+- **Astrophysical Constraint Enforcement:** A dedicated Validator Node enforces hard physical boundaries utilizing strict Pydantic `BaseModel` assertions. Edges that fail validation emit structured error parameters back into the graph.
+- **Offline Evaluation (`src/evals/`):** Quality assessments run via `pydantic_evals`, grading extraction accuracy and prompt effectiveness locally.

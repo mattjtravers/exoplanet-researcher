@@ -10,35 +10,40 @@ Exoplanet Researcher is a lightweight, multi-agent pipeline built to automate th
 ## Architectural Blueprint
 
 ```
-[CandidateTarget Input]
+[CandidateInput: target_id + catalog_origin]
           │
           ▼
-┌───────────────────┐  ──(MCP)──► [Local Astro MCP Tool Server]
-│   ObserverNode    │  ◄────────  (Photometric Light Curves)
-└─────────┬─────────┘
-          │ (AnomalyRecords)
+┌────────────────────┐  ──(MCP)──► [Local Astro MCP Tool Server]
+│ InitializationNode │  ◄────────  (Stellar Properties Catalog Lookup)
+└─────────┬──────────┘
+          │ (CandidateTarget)
           ▼
+┌───────────────────┐ ◄──────────────────────────┐
+│   ObserverNode    │  ──(MCP)──► Astro MCP      │
+└─────────┬─────────┘  ◄────────  (Light Curves) │
+          │ (AnomalyRecords)                     │
+          ▼                                      │ [Data-Layer Retry]
 ┌───────────────────┐  ──(MCP)──► [Local Literature MCP Server]
 │    ScholarNode    │  ◄────────  (ArXiv / ADS Metadata)
-└─────────┬─────────┘
-          │ (LiteratureSearchResult)
-          ▼
-┌───────────────────┐
+└─────────┬─────────┘                            │
+          │ (LiteratureSearchResult)             │
+          ▼                                      │
+┌───────────────────┐                            │
 │ DistillationNode  │ (Text Extraction & Citation Pinning)
+└─────────┬─────────┘                            │
+          │ (DistillationOutput)                 │
+          ▼                                      │
+┌───────────────────┐ ◄─────────┐                │
+│  SynthesizerNode  │           │                │
+└─────────┬─────────┘           │ [Synthesis-    │
+          │ (Draft VettingReport)│  Layer Retry] │
+          ▼                     │                │
+┌───────────────────┐ ──────────┘ (violation_source = "synthesis")
+│   ValidatorNode   │ ────────────────────────────┘ (violation_source = "data")
 └─────────┬─────────┘
-          │ (DistillationOutput)
-          ▼
-┌───────────────────┐ ◄─────────────────────────┐
-│  SynthesizerNode  │                          │
-└─────────┬─────────┘                          │ [Self-Correction Loop]
-          │ (Draft VettingReport)              │ (Max Retries Bound)
-          ▼                                    │
-┌───────────────────┐                          │
-│   ValidatorNode   ├──────────────────────────┘
-└─────────┬─────────┘ (Failed Physical Constraints)
           │
           ├─────────────────────────┐
-          ▼ (Success)               ▼ (Failure)
+          ▼ (Success)               ▼ (Retries Exhausted)
   End[VettingReport]       End[ValidatorError]
 
 ```
@@ -69,7 +74,7 @@ This project is fully optimized for **GitHub Codespaces**. Reviewers do not need
 2. Once the terminal initializes in your browser, execute the pipeline script directly:
 
 ```bash
-python src/main.py --target "KIC-10666592"
+python src/main.py --target "10666592" --catalog "KIC"
 
 ```
 
